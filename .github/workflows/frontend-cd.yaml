@@ -85,7 +85,7 @@ jobs:
       - name: Build and push Docker image
         working-directory: starter/frontend
         env:
-          REACT_APP_MOVIE_API_URL: http://localhost:5000
+          REACT_APP_MOVIE_API_URL: http://a84ecd2f975164860ad8c25e81425105-1438612836.us-east-1.elb.amazonaws.com
           ECR_REPOSITORY: ${{ secrets.FRONTEND_ECR_REPOSITORY }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
