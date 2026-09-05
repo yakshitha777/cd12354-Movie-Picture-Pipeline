@@ -25,16 +25,16 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-
-      - name: Install Pipenv
-        run: pip install pipenv
+          python-version-file: starter/backend/.python-version
+          cache: pip
 
       - name: Install dependencies
-        run: pipenv install --dev
+        run: pip install -r requirements.txt
 
       - name: Run lint
-        run: pipenv run lint
+        run: |
+          pip install flake8
+          flake8 .
 
   test:
     name: Test Backend
@@ -51,19 +51,17 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-
-      - name: Install Pipenv
-        run: pip install pipenv
+          python-version-file: starter/backend/.python-version
+          cache: pip
 
       - name: Install dependencies
-        run: pipenv install --dev
+        run: pip install -r requirements.txt
 
       - name: Run tests
-        run: pipenv run test
+        run: pytest
 
   build:
-    name: Build Backend
+    name: Build and Push Backend
     runs-on: ubuntu-latest
 
     needs:
@@ -74,11 +72,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Build and push Docker image
         working-directory: starter/backend
@@ -113,8 +115,24 @@ jobs:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
 
-      - name: Configure kubeconfig
-        run: aws eks update-kubeconfig --name cluster --region us-east-1
+      - name: Configure kubectl
+        run: |
+          aws eks get-token --cluster-name cluster --region us-east-1 > /tmp/token.json
+
+          TOKEN=$(jq -r '.status.token' /tmp/token.json)
+
+          kubectl config set-cluster cluster \
+            --server="https://4AF8A75DF4BD20580AAF084D6F8724C0.gr7.us-east-1.eks.amazonaws.com" \
+            --insecure-skip-tls-verify=true
+
+          kubectl config set-credentials github-action-user \
+            --token="$TOKEN"
+
+          kubectl config set-context cluster \
+            --cluster=cluster \
+            --user=github-action-user
+
+          kubectl config use-context cluster
 
       - name: Install kustomize
         run: |
