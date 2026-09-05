@@ -27,13 +27,14 @@ jobs:
         with:
           python-version: '3.8'
 
+      - name: Install Pipenv
+        run: pip install pipenv
+
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pipenv install --dev
 
       - name: Run lint
-        run: |
-          pip install flake8
-          flake8 .
+        run: pipenv run flake8 .
 
   test:
     name: Test Backend
@@ -52,11 +53,14 @@ jobs:
         with:
           python-version: '3.8'
 
+      - name: Install Pipenv
+        run: pip install pipenv
+
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pipenv install --dev
 
       - name: Run tests
-        run: pytest
+        run: pipenv run pytest
 
   build:
     name: Build and Push Backend
